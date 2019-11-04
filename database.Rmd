@@ -6,54 +6,45 @@ output: pdf_document
 ---
 ```{r setup, include=FALSE}
 library(tidyverse)
+library(DBI)
+library(RSQLite)
 ```
 
 ## First Read data 
 
 ```{r warning=FALSE}
+setwd("C:/Users/huang/Desktop")
 donor <- read.csv("Top MA Donors 2016-2020.csv")
-
 ```
 
 # Data cleaning
 ```{r warning=FALSE}
-
-DF <- sheet2 %>% separate(contrib, c("last", "first"), ",") %>%
+DF <-donor%>% separate(contrib, c("last", "first"), ",") %>%
                      separate(first, c("redundancy", "firstname"), " ") %>%
                      dplyr::select(-redundancy,-last)
 DF$Fecoccemp <- as.factor(gsub("\\.", "", DF$Fecoccemp))
-
 ```
 
 # Build database 
 ```{r warning=FALSE}
-
 # define donors , recipients and other information
 donorsID <- DF %>% dplyr::select(contribid,firstname,lastname) %>% distinct() 
-colnames(donors)[1]<-"id" 
-
+colnames(donor)[1]<-"id" 
 recipients <- DF %>% dplyr::select(recipid,recipient,recipcode,cmteid) %>% distinct() 
 colnames(recipients)[1:2]<-c("id","name") 
-
 demographic_info_donors <- DF %>% dplyr::select(contribid,City,State,Zip) %>% distinct()
-colnames(demographic)[1]<-"donors_id"
 
 political_info_donors <- DF %>% dplyr::select(contribid,cycle,fam,Fecoccemp,orgname,ultorg,party) %>% distinct()
 colnames(political_info_donors)[1] <- "donors_id"
-
-
 # Relate them by the contributions
-
 contributions <-  DF %>% dplyr::select(contribid,date,amount,recipid)
-
 ```
 
 ```{r}
-MAdonors <- dbConnect(SQLite(),"FrankChen.sqlite")
+MAdonors <- dbConnect(SQLite(),"huangyuzhelalala.sqlite")
 dbWriteTable(MAdonors,"donorsID",donorsID)
 dbWriteTable(MAdonors,"recipients",recipients)
 dbWriteTable(MAdonors,"demographic_info_donors",demographic_info_donors)
 dbWriteTable(MAdonors,"political_info_donors",political_info_donors)
 dbWriteTable(MAdonors,"contributions",contributions)
-
 ```
